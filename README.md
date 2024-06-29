@@ -90,6 +90,8 @@ Generated using dbt core Lineage tool
 <img src="images/erd.drawio.png">
 
 ### Power BI Report snapshots
+Power BI report is available in Amazon Sales Visualization.pbix in the root folder.
+
 #### Page 1 : Overview
 <ul>
 <li>Contains overview of the Sales Value and Quantity to help with a quick preview for users. 
