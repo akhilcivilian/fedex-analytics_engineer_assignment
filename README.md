@@ -26,6 +26,7 @@ This repository contains source data, source code and Power BI Dashboard created
         <li>
             <a href="#dbt-docs-preview">dbt Docs Preview</a>
         </li>
+    </ol>
 
 ## The case
 You are working for an online retail company that sells products on Amazon. Our
