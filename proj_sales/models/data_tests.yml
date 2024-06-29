@@ -1,0 +1,134 @@
+seeds:
+  - name: amazon_sales_report 
+    description: Source Dataset containing Sales data of the retailer.
+    data_tests:
+      - amount_not_negative
+
+models:
+  - name: dim_calendar
+    description: Calendar Dimensional model.
+    columns:
+      - name: fisc_dt
+        description:  Fiscal Date
+        data_tests:
+          - unique
+          - not_null
+      - name: fisc_yr
+        description:  Fiscal Year
+      - name: fisc_pd
+        description:  Fiscal Period/Month
+      - name: fisc_pd_nm
+        description:  Name of the Fiscal Period/Month
+      - name: fisc_qtr
+        description:  Fiscal Quarter
+
+  - name: dim_products
+    description:  Products Dimensional model.
+    columns:
+      - name: hash_key
+        description:  Composite MD5 Hash key using SKU and ASIN codes.
+        data_tests:
+          - unique
+          - not_null
+      - name: prod_id
+        description:  Product ID or SKU ID
+      - name: style_nm
+        description:  Unique Style name
+      - name: category_nm
+        description:  Product Category
+      - name: size_cd
+        description:  Generic size codes of the product. e.g. XL, M, S
+      - name: asin_id
+        description:  Amazon Standard Identification Number. 1 SKU could have multiple ASIN depending on the listing. Multile SKUs can have same ASIN if they are listed as options under same product.
+
+  - name: dim_addresses
+    description:  Address Dimensional model.
+    columns:
+      - name: hash_key
+        description:  Composite MD5 Hash key using Postal code and City
+        data_tests:
+          - unique
+          - not_null
+      - name: postal_cd
+        description:  Postal codes
+      - name: valid_from
+        description:  Postal Code-City-State mapping is based on the orders data as of this date. When due to external changes, a City is mapped to another state, the Addresses model will update itself based on Orders data.
+
+  - name: fct_orders
+    description:  Orders Facts model. Centre of this Star Schema.
+    columns:
+      - name: hash_key
+        description:  Composite MD5 Hash key using Order ID, SKU and ASIN codes.
+        data_tests:
+          - unique
+      - name: prod_hash_key
+        description:  Composite MD5 Hash key using SKU and ASIN codes. Foreign key to dim_products.
+        data_tests:
+          - relationships:
+              to: ref('dim_products')
+              field:  hash_key
+      - name: address_hash_key
+        description:  Composite MD5 Hash key using Postal code and City. Foreign key to dim_addresses.
+        data_tests:
+          - relationships:
+              to: ref('dim_addresses')
+              field:  hash_key
+      - name: order_status_remarks
+        description:  Detailed Order status indicating Returns and Shipping issues.
+      - name: concatenated_promo_id
+        description:  All promo codes applied on this Order ID are concatenated into comma seperated list. Mapped from Amazon Sales report.
+      - name: promo_flag
+        description:  Indicates whether a promo code is applied on the order or not.
+      - name: return_flag
+        description:  Indicates whether the current Order is successful sales or returns.
+      - name: gross_quantity
+        description:  Quantity captured in Amazon Sales Report.
+      - name: gross_sales_value
+        description:  Amount captured in Amazon Sales Report.
+      - name: net_quantity
+        description:  0 if Order is a return, else gross_quantity.
+      - name: net_sales_value
+        description:  0 if Order is a return, else gross_sales_amount.
+
+  - name: dm_monthly_revenue
+    description:  Datamart built on top of fct_orders by aggregating Sales revenue and Sales units at a Monthly level. Also contains foreign keys to dim_products and dim_addresses.
+    columns:
+      - name: prod_hash_key
+        description:  Composite MD5 Hash key using SKU and ASIN codes. Foreign key to dim_products.
+        data_tests:
+          - relationships:
+              to: ref('dim_products')
+              field:  hash_key
+      - name: address_hash_key
+        description:  Composite MD5 Hash key using Postal code and City. Foreign key to dim_addresses.
+        data_tests:
+          - relationships:
+              to: ref('dim_addresses')
+              field:  hash_key
+      - name: total_revenue
+        description:  Sum of net_sales_value.
+      - name: total_quantity_sold
+        description:  Sum of net_quantity.
+      - name: total_return_amount
+        description:  Diffence of sums of gross_sales_value and net_sales_value.
+      - name: total_return_quantity
+        description:  Diffence of sums of gross_quantity and net_quantity.
+
+  - name: dm_promotion_codes
+    description:  Datamart built on top of fct_orders by unnesting the concatenated Promotion codes by Order ID. Also contains foreign keys to dim_products and dim_addresses.
+    columns:
+      - name: prod_hash_key
+        description:  Composite MD5 Hash key using SKU and ASIN codes. Foreign key to dim_products.
+        data_tests:
+          - relationships:
+              to: ref('dim_products')
+              field:  hash_key
+      - name: address_hash_key
+        description:  Composite MD5 Hash key using Postal code and City. Foreign key to dim_addresses.
+        data_tests:
+          - relationships:
+              to: ref('dim_addresses')
+              field:  hash_key
+      - name: promo_code
+        description:  Unnested Promo code from Amazon Sales report.
+
